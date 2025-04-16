@@ -43,18 +43,12 @@ class AdminLoginView(views.APIView):
             return Response({"message": "Email and password are required"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            # Try to get the user first
-            try:
-                user = AdminUser.objects.get(email=email)
-            except AdminUser.DoesNotExist:
-                return Response({"message": "Invalid email or password"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Then authenticate
-            user = authenticate(username=user.username, password=password)
+            # Authenticate using email
+            user = authenticate(request, email=email, password=password)
             
             if user:
                 token, _ = Token.objects.get_or_create(user=user)
-                is_admin = user.isAdmin  # Use the correct field name
+                is_admin = user.isAdmin
                 
                 return Response({
                     "token": token.key,
