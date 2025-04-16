@@ -39,17 +39,31 @@ class AdminLoginView(views.APIView):
         email = request.data.get("email")
         password = request.data.get("password")
         
+        if not email or not password:
+            return Response({"message": "Email and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            user = authenticate(email=email, password=password)
+            # Try to get the user first
+            try:
+                user = AdminUser.objects.get(email=email)
+            except AdminUser.DoesNotExist:
+                return Response({"message": "Invalid email or password"}, status=status.HTTP_400_BAD_REQUEST)
             
+            # Then authenticate
+            user = authenticate(username=user.username, password=password)
             
             if user:
                 token, _ = Token.objects.get_or_create(user=user)
-                is_admin= User.objects.filter(email=email).values_list('isAdmin')
+                is_admin = user.isAdmin  # Use the correct field name
                 
-                return Response({"token": token.key,"is_admin": is_admin[0][0] }, status=status.HTTP_200_OK)
+                return Response({
+                    "token": token.key,
+                    "is_admin": is_admin,
+                    "message": "Login successful"
+                }, status=status.HTTP_200_OK)
             
-            return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Invalid email or password"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(e)
-            traceback.print_exec()
+            print(f"Login error: {str(e)}")
+            traceback.print_exc()
+            return Response({"message": "An error occurred during login"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
