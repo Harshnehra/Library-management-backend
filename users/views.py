@@ -18,6 +18,7 @@ class AdminSignupView(views.APIView):
         username = request.data.get("username")
         email = request.data.get("email")
         password = request.data.get("password")
+        print(f'{password=}')
 
         
         if not username or not email or not password:
